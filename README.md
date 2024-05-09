@@ -1,5 +1,5 @@
 # Dockerfile-Laravel-Tigris-Bucket-Middleman
-This repository connects a Laravel application with Github, and Tigris to:
+This repository connects a Laravel application with Github, and Tigris( S3 compatible! ) to:
 1. Download artifact from workflow runs.
 2. Unzip downloaded artifact.
 3. Upload artifact file to a public Tigris bucket.

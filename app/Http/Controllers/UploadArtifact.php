@@ -35,7 +35,7 @@ class UploadArtifact extends Controller
             Storage::disk('local')->put( $artifact['name'].'.zip', $artifactData['body'] );
             $folder = $this->unzip( $artifact['name'].'.zip' );
 
-            // Upload local folder to Tigris
+            // Upload local folder to Tigris, yup! it's s3 compatible, so we can use the s3 driver
             Storage::disk('s3')->writeStream($folder, Storage::disk('local')->readStream($folder));
             Log::info( 'Completed upload...' );
             return response('Success', 200);
