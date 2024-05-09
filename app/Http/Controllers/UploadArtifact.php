@@ -103,8 +103,6 @@ class UploadArtifact extends Controller
 
             // Upload folder to Tigris
             Storage::disk('s3')->writeStream($folder, Storage::disk('local')->readStream($folder));
-            //Storage::disk('local')->delete($folder);
-
             Log::info( 'Completed upload...' );
             return response('Success', 200);
         }catch(\Exception $e){
