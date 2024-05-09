@@ -6,81 +6,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Http;
 
-use GuzzleHttp\Client;
-use Config;
 use Log;
-use File;
 use ZipArchive;
 
 class UploadArtifact extends Controller
 {
-
-    /**
-     * Make a call to the github api for repo-artifact communication
-     */
-    function ghClient( )
-    {
-        $appConfig = Config::get('app'); 
-          
-        $token = $appConfig['github_token'];
-        $headers = [
-            'Authorization' => 'Bearer ' . $token,        
-            'Accept'        => 'application/vnd.github+json',
-        ];
-
-        $client = new Client([
-            'base_uri' => "https://api.github.com/repos/fly-apps/dockerfile-laravel/actions/",
-            'headers'  => $headers
-        ]);
-
-        return $client; 
-    }
-
-
-    /**
-     * Get a list of build artifacts for the dockerfile-laravel package from the calling workflow "build" run id and the name of the artifact
-     */
-    function getLatestBuildsFromGithub( $runId, $name )
-    {
-        $href = "runs/$runId/artifacts?name=".$name;
-    
-        $client = $this->ghClient();
-        $response = $client->request('GET', $href);
-    
-        $list = json_decode( 
-            $response->getBody()->getContents(), 
-            1
-        );
-        return $list['artifacts'];
-    }
-
-    /**
-     * Get file contents from github artifact through artifact_id
-     */
-    function getArtifactFromGithub( $artifactId )
-    {
-        Log::info( 'Retrieving artifact '.$artifactId );
-        $client = $this->ghClient();
-        $href = "artifacts/$artifactId/zip";
-        $response = $client->request('GET', $href );
-
-        return [
-            'body'=>$response->getBody(),
-            'headers'=>$response->getHeaders()
-        ];
-    }
-
-    /**
-     * Get filename from github artifact response
-     */
-    function getFileNameFromResponseHeader( $header )
-    {
-        $disposition = $header["Content-Disposition"][0];
-        $fileName    = trim( (explode( 'filename="', $disposition )[1]), '"' );
-        return $fileName; 
-    }
-
-    
     /**
      * THE ENTRYPOINT
      * 
@@ -91,17 +21,21 @@ class UploadArtifact extends Controller
     public function upload( Request $request )
     {
         try{
+            // Get help from the custom GithubClient helper we have
+            $gH = new \App\Services\GithubClient();
+
+            // Get URL to build artifact of run_id+artifact "name" sent in request
             Log::info( "Retrieving build artifacts '".$request->name."' from run :".$request->run_id );
-            $latestArtifactsList = $this->getLatestBuildsFromGithub( $request->run_id, $request->name );
+            $latestArtifactsList = $gH->getLatestBuildsFromGithub( $request->run_id, $request->name );
             $artifact = $latestArtifactsList[0]; 
 
-            // Download + Unzip locally
+            // Use the artifact details retrieved from above to Download + Unzip the artifact locally
             Log::info( 'Uploading artifact '.$artifact['name'].' at download uri: '.$artifact['archive_download_url'] );
-            $artifactData = $this->getArtifactFromGithub( $artifact['id'] );
+            $artifactData = $gH->getArtifactFromGithub( $artifact['id'] );
             Storage::disk('local')->put( $artifact['name'].'.zip', $artifactData['body'] );
             $folder = $this->unzip( $artifact['name'].'.zip' );
 
-            // Upload folder to Tigris
+            // Upload local folder to Tigris
             Storage::disk('s3')->writeStream($folder, Storage::disk('local')->readStream($folder));
             Log::info( 'Completed upload...' );
             return response('Success', 200);

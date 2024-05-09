@@ -19,7 +19,7 @@ php artisan serve
 
 3. Please make sure you have a Tigris bucket by following the [steps here.](https://fly.io/docs/reference/tigris/)
 
-4. Save the credentials you'll be receiving from step 1, and add them in your .env file. ( See the env variables added in fly.toml.example! )
+4. Save the credentials you'll be receiving from step 1, and add them in your .env file. ( See the env variables added in fly.toml.example OR .env.example! )
 
 5. Make sure you have a Github run artifact created, which you would want to upload to your Tigris bucket. You can make one by simply creating a workflow that uploads a file. [Here's one way!](https://github.com/fly-apps/dockerfile-laravel/pull/38/files#diff-5c3fa597431eda03ac3339ae6bf7f05e1a50d6fc7333679ec38e21b337cb6721R54) 
 
@@ -28,3 +28,4 @@ php artisan serve
 >name - the name of the file you've indicated during upload from your workflow
 
 7. If all works well, and the upload completes, visit your Tigris bucket at your Tigris console and you should see the artifact( unzipped! ) uploaded in the bucket
+
